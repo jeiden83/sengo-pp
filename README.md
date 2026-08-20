@@ -2,10 +2,11 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=for-the-badge)
+![NPM Version](https://img.shields.io/npm/v/sengo-pp.svg?style=for-the-badge&color=CB3837&logo=npm)
+![NPM Downloads](https://img.shields.io/npm/dm/sengo-pp.svg?style=for-the-badge&color=CB3837)
 ![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)
 ![Parity](https://img.shields.io/badge/osu!lazer_parity-%3C_0.01%25-brightgreen.svg?style=for-the-badge)
-![Platform](https://img.shields.io/badge/platform-win32--x64-orange.svg?style=for-the-badge)
+![Platform](https://img.shields.io/badge/platform-win%20|%20linux%20|%20darwin-blue.svg?style=for-the-badge)
 ![Performance](https://img.shields.io/badge/throughput-880+_calcs/sec-blueviolet.svg?style=for-the-badge)
 
 **Motor nativo de alto rendimiento en Rust para cálculo de dificultad (Star Rating) y Performance Points (PP) de osu!lazer.**
@@ -63,12 +64,13 @@ Comparativa directa entre el ejecutable oficial `osu-tools` de ppy y `sengo-pp`:
 
 ## 📦 Instalación
 
-### Desde la carpeta local o submódulo de Git:
 ```bash
-npm install ./ruta/a/sengo_pp
+npm install sengo-pp
 ```
 
-### O vinculándolo globalmente con NPM:
+*Los binarios nativos precompilados para Windows, Linux y macOS se seleccionan automáticamente sin necesidad de compilar Rust en tu entorno.*
+
+### Instalación local o en desarrollo (opcional):
 ```bash
 # Dentro del repositorio sengo_pp:
 npm link

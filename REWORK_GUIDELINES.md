@@ -112,56 +112,22 @@ node tools/tester.js 131891 HDDT 100,99,98
 1. Revisa si la divergencia está en **Aim**, **Speed**, **Accuracy**, **Reading** o **Flashlight**.
 2. Revisa el commit diff en el repositorio `ppy/osu` o descompila las clases actualizadas en `csharp_sources/`.
 
-### Paso 4: Depuración Profunda Objeto por Objeto (Técnica de Dump & Diff)
-Si la diferencia persiste tras ajustar las fórmulas globales, aísla el objeto exacto donde comienza la divergencia:
-
-#### 1. Volcar las propiedades desde C# (`osu-tools`):
-Crea un comando temporal o script en C# que itere sobre `playableBeatmap.HitObjects` y exporte en JSON:
-```csharp
-for (int i = 0; i < list.Count; i++) {
-    var d = (OsuDifficultyHitObject)list[i];
-    rows.Add(new {
-        idx = i,
-        time = d.StartTime,
-        is_slider = d.BaseObject is Slider,
-        jump = d.JumpDistance,
-        lazy_jump = d.LazyJumpDistance,
-        travel_dist = d.TravelDistance,
-        lazy_travel = d.LazyTravelDistance,
-        angle = d.Angle,
-        snap = SnapAimEvaluator.EvaluateDifficultyOf(d, true) * 70.9,
-        flow = FlowAimEvaluator.EvaluateDifficultyOf(d, true) * 242.0
-    });
-}
-File.WriteAllText("dump_aim_csharp.json", JsonConvert.SerializeObject(new { rows }));
-```
-
-#### 2. Volcar las mismas propiedades desde Rust (`src/difficulty.rs`):
-```rust
-let mut rust_rows = Vec::new();
-for (i, d) in lazer_objects.iter().enumerate() {
-    rust_rows.push(serde_json::json!({
-        "idx": i,
-        "time": d.start_time,
-        "is_slider": d.is_slider,
-        "jump": d.jump_distance,
-        "lazy_jump": d.lazy_jump_distance,
-        "travel_dist": d.travel_distance,
-        "lazy_travel": d.lazy_travel_distance,
-        "angle": d.angle,
-        "snap": SnapAimEvaluator::evaluate_difficulty_of(&lazer_objects, i, true) * 70.9,
-        "flow": FlowAimEvaluator::evaluate_difficulty_of(&lazer_objects, i, true) * 242.0
-    }));
-}
-std::fs::write("dump_aim_rust.json", serde_json::to_string(&rust_rows).unwrap());
-```
-
-#### 3. Comparar con un script de Diff (`diff.js`):
-Compara `dump_aim_csharp.json` vs `dump_aim_rust.json` calculando `|c.prop - r.prop|` para identificar el índice (`idx`) y timestamp (`time`) con mayor error.
+### Paso 4: Ajustar en Rust y Validar
+1. Edita el archivo correspondiente (`src/lazer_skills.rs`, `src/lazer_engine.rs` o `src/difficulty.rs`).
+2. Compila el motor en Release:
+   ```powershell
+   npm run build
+   ```
+3. Ejecuta la suite de paridad masiva:
+   ```powershell
+   npm run test:mass
+   npm run test:csharp
+   ```
+4. Asegúrate de que **todos los 60 escenarios pasen con $< 0.01\%$ de delta**.
 
 ---
 
-## 💈 5. Principio Ponytail (Reglas de Desarrollo)
+## 💈 Principio Ponytail (Reglas de Desarrollo)
 1. **La solución más simple y directa:** Evitar crear abstracciones innecesarias o parches específicos por mapa.
 2. **Causa Raíz:** Siempre arreglar el evaluador matemático en lugar de colocar factores de corrección artificiales.
 3. **Cero Regresiones:** Ningún cambio para arreglar un mod (ej. EZ) debe empeorar la paridad en otros mods (ej. DT, HR, NM).

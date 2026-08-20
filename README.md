@@ -192,7 +192,14 @@ npm run benchmark
 
 ---
 
+## 💖 Inspiración y Agradecimientos
+
+- **[ppy/osu](https://github.com/ppy/osu) & [ppy/osu-tools](https://github.com/ppy/osu-tools):** El motor oficial de osu!lazer desarrollado por **ppy** y la comunidad de osu!, fuente definitiva de verdad y paridad para todas las fórmulas matemáticas, evaluadores de habilidades (`ReadingSkill`, `FlashlightSkill`, `SnapAim`, `FlowAim`, etc.) y el rework de PP.
+- **[MaxOhn/rosu-pp](https://github.com/MaxOhn/rosu-pp) & [MaxOhn/rosu-pp-js](https://github.com/MaxOhn/rosu-pp-js):** Gran inspiración por su excelente arquitectura de bindings e ingeniería de parseo de mapas en Rust, base a partir de la cual se concibió y desarrolló `sengo-pp` para alcanzar paridad nativa completa 1:1 con el motor C# oficial.
+
+---
+
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT.
+Este proyecto está bajo la Licencia MIT.  
 Desarrollado para el ecosistema **Sengo**.

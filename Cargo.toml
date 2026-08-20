@@ -1,0 +1,29 @@
+[package]
+name = "sengo-pp"
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2.16", default-features = false, features = ["napi4", "serde-json"] }
+napi-derive = "2.16"
+
+# Dependencia base estable de cálculo de dificultad y PP:
+rosu-pp = "4.0.1"
+# Para probar reworks experimentales (locales o branches de git):
+# rosu-pp = { path = "./rosu-core" }
+# rosu-pp = { git = "https://github.com/MaxOhn/rosu-pp", branch = "dev" }
+
+rosu-mods = { version = "0.4.1", features = ["serde"] }
+rosu-map = "0.2.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[build-dependencies]
+napi-build = "1.2"
+
+[profile.release]
+opt-level = 3
+codegen-units = 1

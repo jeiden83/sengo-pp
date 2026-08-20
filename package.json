@@ -1,0 +1,32 @@
+{
+  "name": "sengo-pp",
+  "version": "1.0.0",
+  "description": "High-performance native difficulty and PP calculation engine for Sengo",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "*.node"
+  ],
+  "napi": {
+    "binaryName": "sengo-pp",
+    "packageName": "sengo-pp",
+    "triples": {
+      "default": true,
+      "additional": []
+    }
+  },
+  "scripts": {
+    "build": "napi build --platform --release -- --jobs 1",
+    "build:debug": "napi build --platform -- --jobs 1",
+    "test": "node tests/parity.test.js",
+    "test:csharp": "node tests/csharp_parity.test.js",
+    "test:mass": "node tests/mass_parity_benchmark.js",
+    "benchmark": "node tests/native_pure_benchmark.js"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.8.6"
+  },
+  "license": "MIT"
+}

@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -62,20 +65,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm ci
+
       - name: Download all built artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Copy binaries to root
+      - name: Prepare Release Packages (tar.gz, zip & tgz)
         run: |
           mkdir -p dist
+          # Copy raw .node binaries
           find artifacts -name "*.node" -exec cp {} dist/ \;
+          
+          # Create individual tar.gz for each platform binary
+          for file in dist/*.node; do
+            filename=$(basename "$file")
+            tar -czvf "dist/${filename}.tar.gz" -C dist "$filename"
+          done
+          
+          # Copy all .node into root for npm pack
+          cp dist/*.node . || true
+          
+          # Generate official npm package tarball
+          npm pack --pack-destination dist/
+          
+          echo "=== Built Release Assets ==="
           ls -la dist/
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: dist/*.node
+          files: |
+            dist/*.node
+            dist/*.tar.gz
+            dist/*.tgz
           generate_release_notes: true

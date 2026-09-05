@@ -504,10 +504,11 @@ impl LazerFlashlightSkill {
                 self.current_section_end = (obj.start_time / 400.0).ceil() * 400.0;
             }
 
+            let prev_start_time = obj.start_time - obj.delta_time;
             while obj.start_time > self.current_section_end {
                 self.strain_peaks.push(self.current_section_peak);
+                self.current_section_peak = self.current_strain * Self::strain_decay((self.current_section_end - prev_start_time).max(0.0));
                 self.current_section_end += 400.0;
-                self.current_section_peak = self.current_strain * Self::strain_decay(self.current_section_end - obj.start_time);
             }
 
             let decay = Self::strain_decay(obj.delta_time);

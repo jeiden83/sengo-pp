@@ -32,3 +32,4 @@ Thumbs.db
 # Agent configs & internal directives
 .agents/
 AGENTS.md
+REWORK_GUIDELINES.md

@@ -582,17 +582,45 @@ impl JsDifficulty {
     pub fn strains(&self, map: &JsBeatmap) -> JsStrains {
         let s = self.difficulty.strains(&map.inner);
         let mut js_strains = JsStrains::from_rosu(s);
+        if map.mode() == GameMode::Osu {
+            let clock_rate = self.custom_clock_rate;
+            let mut ar = self.custom_ar.unwrap_or(map.inner.ar as f64);
+            let mut cs = self.custom_cs.unwrap_or(map.inner.cs as f64);
+            let mut od = self.custom_od.unwrap_or(map.inner.od as f64);
 
-        if map.inner.mode == rosu_pp::model::mode::GameMode::Osu {
-            let lazer_objects = LazerDifficultyHitObject::generate_from_beatmap(&map.inner, self.has_hidden);
-            let mut reading_skill = LazerReadingSkill::new(self.has_hidden);
-            reading_skill.process_objects(&lazer_objects);
-
-            let mut peaks = reading_skill.strain_peaks;
-            if let Some(ref aim) = js_strains.aim {
-                peaks.resize(aim.len(), 0.0);
+            if self.custom_cs.is_none() {
+                if self.has_hardrock {
+                    cs = (cs * 1.3).min(10.0);
+                } else if self.has_easy {
+                    cs *= 0.5;
+                }
             }
-            js_strains.reading = Some(peaks);
+            if self.custom_ar.is_none() {
+                if self.has_hardrock {
+                    ar = (ar * 1.4).min(10.0);
+                } else if self.has_easy {
+                    ar *= 0.5;
+                }
+            }
+            if self.custom_od.is_none() {
+                if self.has_hardrock {
+                    od = (od * 1.4).min(10.0);
+                } else if self.has_easy {
+                    od *= 0.5;
+                }
+            }
+
+            let lazer_objects = build_lazer_difficulty_hit_objects(&map.inner, ar, cs, od, clock_rate, self.has_hidden);
+            if !lazer_objects.is_empty() {
+                let mut reading_skill = LazerReadingSkill::new(self.has_hidden);
+                reading_skill.process_objects(&lazer_objects);
+
+                let mut peaks = reading_skill.strain_peaks;
+                if let Some(ref aim) = js_strains.aim {
+                    peaks.resize(aim.len(), 0.0);
+                }
+                js_strains.reading = Some(peaks);
+            }
         }
 
         js_strains

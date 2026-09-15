@@ -1,6 +1,6 @@
 {
   "name": "sengo-pp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "High-performance native difficulty and PP calculation engine for Sengo",
   "main": "index.js",
   "types": "index.d.ts",

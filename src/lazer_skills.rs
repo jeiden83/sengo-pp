@@ -383,6 +383,7 @@ pub struct LazerReadingSkill {
     pub object_list_start_times: Vec<f64>,
     pub difficulties: Vec<f64>,
     pub object_weight_sum: f64,
+    pub strain_peaks: Vec<f64>,
 }
 
 impl LazerReadingSkill {
@@ -393,6 +394,7 @@ impl LazerReadingSkill {
             object_list_start_times: Vec::new(),
             difficulties: Vec::new(),
             object_weight_sum: 0.0,
+            strain_peaks: Vec::new(),
         }
     }
 
@@ -402,6 +404,10 @@ impl LazerReadingSkill {
     }
 
     pub fn process_objects(&mut self, objects: &[LazerDifficultyHitObject]) {
+        const SECTION_LENGTH: f64 = 400.0;
+        let mut current_section_end = SECTION_LENGTH;
+        let mut current_section_peak = 0.0;
+
         for (i, obj) in objects.iter().enumerate() {
             self.object_list_start_times.push(obj.start_time);
             let decay = Self::strain_decay(obj.delta_time);
@@ -412,6 +418,16 @@ impl LazerReadingSkill {
 
             self.current_strain += raw_reading * (1.0 - decay) * 2.5;
             self.difficulties.push(self.current_strain);
+
+            while obj.start_time > current_section_end {
+                self.strain_peaks.push(current_section_peak);
+                current_section_peak *= Self::strain_decay(SECTION_LENGTH);
+                current_section_end += SECTION_LENGTH;
+            }
+            current_section_peak = current_section_peak.max(self.current_strain);
+        }
+        if !objects.is_empty() {
+            self.strain_peaks.push(current_section_peak);
         }
     }
 

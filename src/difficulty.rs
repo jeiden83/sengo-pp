@@ -581,7 +581,21 @@ impl JsDifficulty {
     #[napi(js_name = "strains")]
     pub fn strains(&self, map: &JsBeatmap) -> JsStrains {
         let s = self.difficulty.strains(&map.inner);
-        JsStrains::from_rosu(s)
+        let mut js_strains = JsStrains::from_rosu(s);
+
+        if map.inner.mode == rosu_pp::model::mode::GameMode::Osu {
+            let lazer_objects = LazerDifficultyHitObject::generate_from_beatmap(&map.inner, self.has_hidden);
+            let mut reading_skill = LazerReadingSkill::new(self.has_hidden);
+            reading_skill.process_objects(&lazer_objects);
+
+            let mut peaks = reading_skill.strain_peaks;
+            if let Some(ref aim) = js_strains.aim {
+                peaks.resize(aim.len(), 0.0);
+            }
+            js_strains.reading = Some(peaks);
+        }
+
+        js_strains
     }
 
     #[napi(js_name = "gradualDifficulty")]

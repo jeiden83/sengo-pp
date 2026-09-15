@@ -33,3 +33,6 @@ Thumbs.db
 .agents/
 AGENTS.md
 REWORK_GUIDELINES.md
+
+# Local tests
+tests/

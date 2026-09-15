@@ -172,6 +172,17 @@ export class Strains {
   skills: any[];
   mode: GameMode;
   sectionLength: number;
+  aim?: Float64Array;
+  aimNoSliders?: Float64Array;
+  speed?: Float64Array;
+  flashlight?: Float64Array;
+  color?: Float64Array;
+  rhythm?: Float64Array;
+  stamina?: Float64Array;
+  reading?: Float64Array;
+  movement?: Float64Array;
+  strains?: Float64Array;
+  free(): void;
 }
 
 export class GradualDifficulty {

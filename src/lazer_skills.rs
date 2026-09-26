@@ -18,6 +18,7 @@ impl StrainPeak {
 
 pub struct LazerAimSkill {
     pub include_sliders: bool,
+    pub has_relax: bool,
     pub current_strain: f64,
     pub current_section_peak: f64,
     pub current_section_begin: f64,
@@ -34,12 +35,13 @@ pub struct LazerAimSkill {
 }
 
 impl LazerAimSkill {
-    pub fn new(include_sliders: bool) -> Self {
+    pub fn new(include_sliders: bool, has_relax: bool) -> Self {
         let decay_weight = 0.9;
         let max_section_length = 400.0;
         let max_stored_length = 11.0 / (1.0 - decay_weight);
         Self {
             include_sliders,
+            has_relax,
             current_strain: 0.0,
             current_section_peak: 0.0,
             current_section_begin: 0.0,
@@ -120,7 +122,12 @@ impl LazerAimSkill {
                 } else {
                     logistic_simple(-7.27 * ratio.ln(), 1.0)
                 };
-                let mut total_aim = (snap_agil * snap_flow_prob + flow_diff * (1.0 - snap_flow_prob)) * 1.12;
+                let (final_snap_agil, final_flow) = if self.has_relax {
+                    (snap_agil * 0.75, flow_diff * 0.6)
+                } else {
+                    (snap_agil, flow_diff)
+                };
+                let mut total_aim = (final_snap_agil * snap_flow_prob + final_flow * (1.0 - snap_flow_prob)) * 1.12;
 
                 let od_term = (obj.overall_difficulty.max(0.0)).powi(2) / 4000.0;
                 total_aim *= 0.985 + od_term;
@@ -157,7 +164,12 @@ impl LazerAimSkill {
             } else {
                 logistic_simple(-7.27 * ratio.ln(), 1.0)
             };
-            let mut total_aim = (snap_agil * snap_flow_prob + flow_diff * (1.0 - snap_flow_prob)) * 1.12;
+            let (final_snap_agil, final_flow) = if self.has_relax {
+                (snap_agil * 0.75, flow_diff * 0.6)
+            } else {
+                (snap_agil, flow_diff)
+            };
+            let mut total_aim = (final_snap_agil * snap_flow_prob + final_flow * (1.0 - snap_flow_prob)) * 1.12;
 
             let od_term = (obj.overall_difficulty.max(0.0)).powi(2) / 4000.0;
             total_aim *= 0.985 + od_term;
@@ -281,6 +293,7 @@ impl LazerAimSkill {
 }
 
 pub struct LazerSpeedSkill {
+    pub has_relax: bool,
     pub current_strain: f64,
     pub slider_strains: Vec<f64>,
     pub difficulties: Vec<f64>,
@@ -288,8 +301,9 @@ pub struct LazerSpeedSkill {
 }
 
 impl LazerSpeedSkill {
-    pub fn new() -> Self {
+    pub fn new(has_relax: bool) -> Self {
         Self {
+            has_relax,
             current_strain: 0.0,
             slider_strains: Vec::new(),
             difficulties: Vec::new(),
@@ -303,6 +317,9 @@ impl LazerSpeedSkill {
     }
 
     pub fn process_objects(&mut self, objects: &[LazerDifficultyHitObject]) {
+        if self.has_relax {
+            return;
+        }
         for (i, obj) in objects.iter().enumerate() {
             let decay = Self::strain_decay(obj.adjusted_delta_time);
             self.current_strain *= decay;
@@ -321,7 +338,7 @@ impl LazerSpeedSkill {
     }
 
     pub fn difficulty_value(&mut self) -> f64 {
-        if self.difficulties.is_empty() {
+        if self.has_relax || self.difficulties.is_empty() {
             return 0.0;
         }
         let mut sorted: Vec<f64> = self.difficulties.iter().copied().filter(|&v| v > 0.0).collect();
@@ -344,6 +361,7 @@ impl LazerSpeedSkill {
     }
 
     pub fn relevant_object_count(&self) -> f64 {
+        if self.has_relax { return 0.0; }
         if self.difficulties.is_empty() {
             return 0.0;
         }
@@ -355,6 +373,7 @@ impl LazerSpeedSkill {
     }
 
     pub fn count_top_weighted_object_difficulties(&self, diff_val: f64) -> f64 {
+        if self.has_relax { return 0.0; }
         if self.difficulties.is_empty() || self.object_weight_sum == 0.0 {
             return 0.0;
         }
@@ -366,6 +385,7 @@ impl LazerSpeedSkill {
     }
 
     pub fn count_top_weighted_sliders(&self, diff_val: f64) -> f64 {
+        if self.has_relax { return 0.0; }
         if self.slider_strains.is_empty() || self.object_weight_sum == 0.0 {
             return 0.0;
         }
@@ -379,6 +399,7 @@ impl LazerSpeedSkill {
 
 pub struct LazerReadingSkill {
     pub has_hidden: bool,
+    pub has_relax: bool,
     pub current_strain: f64,
     pub object_list_start_times: Vec<f64>,
     pub difficulties: Vec<f64>,
@@ -387,9 +408,10 @@ pub struct LazerReadingSkill {
 }
 
 impl LazerReadingSkill {
-    pub fn new(has_hidden: bool) -> Self {
+    pub fn new(has_hidden: bool, has_relax: bool) -> Self {
         Self {
             has_hidden,
+            has_relax,
             current_strain: 0.0,
             object_list_start_times: Vec::new(),
             difficulties: Vec::new(),
@@ -414,6 +436,9 @@ impl LazerReadingSkill {
             self.current_strain *= decay;
 
             let mut raw_reading = ReadingEvaluator::evaluate_difficulty_of(objects, i, self.has_hidden);
+            if self.has_relax {
+                raw_reading *= 0.4;
+            }
             raw_reading *= 0.825 + (obj.overall_difficulty.max(0.0)).powf(2.2) / 1125.0;
 
             self.current_strain += raw_reading * (1.0 - decay) * 2.5;
@@ -489,6 +514,7 @@ impl LazerReadingSkill {
 }
 
 pub struct LazerFlashlightSkill {
+    pub has_relax: bool,
     pub current_strain: f64,
     pub strain_peaks: Vec<f64>,
     pub current_section_peak: f64,
@@ -498,7 +524,7 @@ pub struct LazerFlashlightSkill {
 }
 
 impl LazerFlashlightSkill {
-    pub fn new(total_objects: usize, has_hidden: bool) -> Self {
+    pub fn new(total_objects: usize, has_hidden: bool, has_relax: bool) -> Self {
         Self {
             current_strain: 0.0,
             strain_peaks: Vec::new(),
@@ -506,6 +532,7 @@ impl LazerFlashlightSkill {
             current_section_end: 400.0,
             total_objects,
             has_hidden,
+            has_relax,
         }
     }
 
@@ -531,6 +558,9 @@ impl LazerFlashlightSkill {
             self.current_strain *= decay;
 
             let mut raw_fl = FlashlightEvaluator::evaluate_difficulty_of(objects, i, self.has_hidden);
+            if self.has_relax {
+                raw_fl *= 0.7;
+            }
             raw_fl *= 0.985 + (obj.overall_difficulty.max(0.0)).powi(2) / 4000.0;
 
             self.current_strain += raw_fl * 0.058;
@@ -607,11 +637,12 @@ pub fn calculate_lazer_performance(
     clock_rate: f64,
     _has_hidden: bool,
     has_flashlight: bool,
+    has_relax: bool,
 ) -> LazerPerformanceResult {
     let total_hits = (diff.hit_circle_count + diff.slider_count + diff.spinner_count) as f64;
     let max_combo = diff.max_combo as f64;
     let score_max_combo = combo.unwrap_or(diff.max_combo) as f64;
-    let effective_misses = misses as f64;
+    let mut effective_misses = misses as f64;
     let acc = (accuracy / 100.0).clamp(0.0, 1.0);
 
     let (count_great, count_ok, count_meh) = {
@@ -648,6 +679,12 @@ pub fn calculate_lazer_performance(
     let meh_window = (199.5 - 10.0 * od) / clock_rate;
     let overall_difficulty = (79.5 - great_window) / 6.0;
 
+    if has_relax {
+        let ok_mult = 0.75 * (1.0 - overall_difficulty / 13.33).max(0.0);
+        let meh_mult = (1.0 - (overall_difficulty / 13.33).powi(5)).max(0.0);
+        effective_misses = (effective_misses + count_ok * ok_mult + count_meh * meh_mult).min(total_hits);
+    }
+
     // 1. Aim PP
     let mut aim_diff = diff.aim_difficulty;
     let slider_count = diff.slider_count as f64;
@@ -668,7 +705,7 @@ pub fn calculate_lazer_performance(
     aim_pp *= acc;
 
     // 2. Speed PP & Deviation
-    let mut speed_pp = 4.0 * diff.speed_difficulty.powi(3);
+    let mut speed_pp = if has_relax { 0.0 } else { 4.0 * diff.speed_difficulty.powi(3) };
     let speed_note_count = diff.speed_note_count + (total_hits - diff.speed_note_count) * 0.1;
     let s_miss = effective_misses.min(speed_note_count);
     let s_meh = count_meh.min((speed_note_count - s_miss).max(0.0));
@@ -705,7 +742,7 @@ pub fn calculate_lazer_performance(
         ((adjusted_great * 6.0 + count_ok * 2.0 + count_meh) / (num_acc_objects * 6.0)).clamp(0.0, 1.0)
     };
 
-    let mut accuracy_pp = 1.52163_f64.powf(overall_difficulty) * circle_acc.powi(24) * 2.83;
+    let mut accuracy_pp = if has_relax { 0.0 } else { 1.52163_f64.powf(overall_difficulty) * circle_acc.powi(24) * 2.83 };
     let circle_bonus = if num_acc_objects < 1000.0 {
         (num_acc_objects / 1000.0).powf(0.3)
     } else {

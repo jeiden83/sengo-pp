@@ -149,8 +149,8 @@ async function main() {
   if (isDryRun) {
     log(`[DRY-RUN] Simulación completa. Todo está verificado y listo.`);
     console.log(`Comandos que se ejecutarían:`);
-    console.log(`  git add package.json package-lock.json Cargo.toml index.d.ts tools/release.js .gitignore src/`);
-    console.log(`  git commit -m "chore(release): bump version to ${targetVersion} and prepare release"`);
+    console.log(`  git add package.json package-lock.json Cargo.toml index.d.ts tools/release.js .gitignore .github/ src/`);
+    console.log(`  git commit -m "feat(release): version v${targetVersion} con soporte y paridad oficial de Relax (RX)"`);
     console.log(`  git push origin main`);
     console.log(`  git tag ${tagName}`);
     console.log(`  git push origin ${tagName}`);
@@ -161,7 +161,7 @@ async function main() {
   const gitStatus = exec('git status --porcelain').trim();
   if (gitStatus.length > 0) {
     log('Archivos con cambios detectados, preparando commit...');
-    exec('git add package.json package-lock.json Cargo.toml index.d.ts tools/release.js .gitignore src/');
+    exec('git add package.json package-lock.json Cargo.toml index.d.ts tools/release.js .gitignore .github/ src/');
     try {
       exec(`git commit -m "chore(release): bump version to ${targetVersion} and prepare release"`);
       log(`✓ Commit realizado para v${targetVersion}`);

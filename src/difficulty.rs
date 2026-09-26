@@ -252,6 +252,7 @@ pub struct JsDifficulty {
     pub(crate) has_hardrock: bool,
     pub(crate) has_easy: bool,
     pub(crate) has_flashlight: bool,
+    pub(crate) has_relax: bool,
     pub(crate) custom_clock_rate: f64,
     pub(crate) custom_ar: Option<f64>,
     pub(crate) custom_cs: Option<f64>,
@@ -268,6 +269,7 @@ impl JsDifficulty {
         let mut has_hardrock = false;
         let mut has_easy = false;
         let mut has_flashlight = false;
+        let mut has_relax = false;
         let mut custom_clock_rate = 1.0;
         let mut custom_ar = None;
         let mut custom_cs = None;
@@ -302,6 +304,7 @@ impl JsDifficulty {
                 has_hardrock = info.has_hardrock;
                 has_easy = info.has_easy;
                 has_flashlight = info.has_flashlight;
+                has_relax = info.has_relax;
                 diff = d;
             }
             if let Some(rate) = a.clock_rate {
@@ -341,6 +344,7 @@ impl JsDifficulty {
             has_hardrock,
             has_easy,
             has_flashlight,
+            has_relax,
             custom_clock_rate,
             custom_ar,
             custom_cs,
@@ -377,6 +381,7 @@ impl JsDifficulty {
         self.has_hardrock = info.has_hardrock;
         self.has_easy = info.has_easy;
         self.has_flashlight = info.has_flashlight;
+        self.has_relax = info.has_relax;
         self.difficulty = d;
         Ok(())
     }
@@ -482,7 +487,7 @@ impl JsDifficulty {
             let lazer_objects = build_lazer_difficulty_hit_objects(&map.inner, ar, cs, od, clock_rate, self.has_hidden);
             if !lazer_objects.is_empty() {
                 // 1. Aim Skill (with sliders)
-                let mut aim_skill_sliders = LazerAimSkill::new(true);
+                let mut aim_skill_sliders = LazerAimSkill::new(true, self.has_relax);
                 aim_skill_sliders.process_objects(&lazer_objects);
                 let num_aim_diff = aim_skill_sliders.difficulty_value();
                 let aim_rating = num_aim_diff.powf(0.63) * 0.02275;
@@ -490,7 +495,7 @@ impl JsDifficulty {
                 let difficult_sliders = aim_skill_sliders.get_difficult_sliders();
 
                 // 2. Aim Skill (without sliders)
-                let mut aim_skill_no_sliders = LazerAimSkill::new(false);
+                let mut aim_skill_no_sliders = LazerAimSkill::new(false, self.has_relax);
                 aim_skill_no_sliders.process_objects(&lazer_objects);
                 let num_aim_no_sliders_diff = aim_skill_no_sliders.difficulty_value();
                 let aim_no_sliders = num_aim_no_sliders_diff.powf(0.63) * 0.02275;
@@ -505,7 +510,7 @@ impl JsDifficulty {
                 };
 
                 // 3. Speed Skill
-                let mut speed_skill = LazerSpeedSkill::new();
+                let mut speed_skill = LazerSpeedSkill::new(self.has_relax);
                 speed_skill.process_objects(&lazer_objects);
                 let speed_diff_val = speed_skill.difficulty_value();
                 let speed_rating = speed_diff_val.sqrt() * 0.0675;
@@ -515,7 +520,7 @@ impl JsDifficulty {
                 let speed_top_weighted_slider_factor = num5 / (speed_difficult_strain_count - num5).max(1.0);
 
                 // 4. Reading Skill
-                let mut reading_skill = LazerReadingSkill::new(self.has_hidden);
+                let mut reading_skill = LazerReadingSkill::new(self.has_hidden, self.has_relax);
                 reading_skill.process_objects(&lazer_objects);
                 let reading_diff_val = reading_skill.difficulty_value();
                 let reading_rating = reading_diff_val.sqrt() * 0.0675;
@@ -524,7 +529,7 @@ impl JsDifficulty {
                 // 5. Flashlight Skill
                 let mut fl_rating = 0.0;
                 if self.has_flashlight {
-                    let mut fl_skill = LazerFlashlightSkill::new(lazer_objects.len() + 1, self.has_hidden);
+                    let mut fl_skill = LazerFlashlightSkill::new(lazer_objects.len() + 1, self.has_hidden, self.has_relax);
                     fl_skill.process_objects(&lazer_objects);
                     fl_rating = fl_skill.calculate_rating();
                 }
@@ -612,7 +617,7 @@ impl JsDifficulty {
 
             let lazer_objects = build_lazer_difficulty_hit_objects(&map.inner, ar, cs, od, clock_rate, self.has_hidden);
             if !lazer_objects.is_empty() {
-                let mut reading_skill = LazerReadingSkill::new(self.has_hidden);
+                let mut reading_skill = LazerReadingSkill::new(self.has_hidden, self.has_relax);
                 reading_skill.process_objects(&lazer_objects);
 
                 let mut peaks = reading_skill.strain_peaks;

@@ -15,6 +15,7 @@ pub struct ParsedModsInfo {
     pub has_hardrock: bool,
     pub has_easy: bool,
     pub has_flashlight: bool,
+    pub has_relax: bool,
 }
 
 pub fn parse_mods_full(env: &Env, val: Unknown) -> Result<ParsedModsInfo> {
@@ -25,7 +26,11 @@ pub fn parse_mods_full(env: &Env, val: Unknown) -> Result<ParsedModsInfo> {
         ValueType::Undefined | ValueType::Null => Ok(info),
         ValueType::Number => {
             let bits = val.coerce_to_number()?.get_uint32()?;
-            info.mods = GameModsLegacy::from_bits(bits).into();
+            if bits & 128 != 0 {
+                info.has_relax = true;
+            }
+            let clean_bits = bits & !128;
+            info.mods = GameModsLegacy::from_bits(clean_bits).into();
             finalize_mods(&mut info);
             Ok(info)
         }
@@ -34,9 +39,16 @@ pub fn parse_mods_full(env: &Env, val: Unknown) -> Result<ParsedModsInfo> {
             if s.is_empty() || s.eq_ignore_ascii_case("NM") {
                 return Ok(info);
             }
-            info.mods = s
-                .parse::<GameModsIntermode>()
-                .map_err(|e| Error::new(Status::InvalidArg, format!("Failed to parse mods string '{s}': {e}")))?;
+            let su = s.to_uppercase();
+            if su.contains("RX") || su.contains("RELAX") {
+                info.has_relax = true;
+            }
+            let clean_s = su.replace("RELAX", "").replace("RX", "");
+            if !clean_s.is_empty() {
+                info.mods = clean_s
+                    .parse::<GameModsIntermode>()
+                    .map_err(|e| Error::new(Status::InvalidArg, format!("Failed to parse mods string '{s}': {e}")))?;
+            }
             finalize_mods(&mut info);
             Ok(info)
         }
@@ -48,13 +60,19 @@ pub fn parse_mods_full(env: &Env, val: Unknown) -> Result<ParsedModsInfo> {
                     for item in &arr {
                         match item {
                             Value::String(s) => {
-                                if !s.eq_ignore_ascii_case("NM") {
+                                let su = s.to_uppercase();
+                                if su.contains("RX") || su.contains("RELAX") {
+                                    info.has_relax = true;
+                                } else if !s.eq_ignore_ascii_case("NM") {
                                     mods_str.push_str(s);
                                 }
                             }
                             Value::Object(obj) => {
                                 if let Some(acronym) = obj.get("acronym").and_then(|v| v.as_str()) {
-                                    if !acronym.eq_ignore_ascii_case("NM") {
+                                    let au = acronym.to_uppercase();
+                                    if au == "RX" || au == "RELAX" {
+                                        info.has_relax = true;
+                                    } else if !acronym.eq_ignore_ascii_case("NM") {
                                         mods_str.push_str(acronym);
                                     }
                                 }
@@ -89,9 +107,14 @@ pub fn parse_mods_full(env: &Env, val: Unknown) -> Result<ParsedModsInfo> {
                 }
                 Value::Object(obj) => {
                     if let Some(acronym) = obj.get("acronym").and_then(|v| v.as_str()) {
-                        info.mods = acronym
-                            .parse::<GameModsIntermode>()
-                            .map_err(|e| Error::new(Status::InvalidArg, format!("Failed to parse mod acronym: {e}")))?;
+                        let au = acronym.to_uppercase();
+                        if au == "RX" || au == "RELAX" {
+                            info.has_relax = true;
+                        } else {
+                            info.mods = acronym
+                                .parse::<GameModsIntermode>()
+                                .map_err(|e| Error::new(Status::InvalidArg, format!("Failed to parse mod acronym: {e}")))?;
+                        }
                     }
                     if let Some(settings) = obj.get("settings").and_then(|v| v.as_object()) {
                         if let Some(sc) = settings.get("speed_change").and_then(|v| v.as_f64()) {
@@ -136,6 +159,9 @@ fn finalize_mods(info: &mut ParsedModsInfo) {
     }
     if bits & 1024 != 0 {
         info.has_flashlight = true;
+    }
+    if bits & 128 != 0 {
+        info.has_relax = true;
     }
     if info.clock_rate.is_none() {
         if bits & 64 != 0 || bits & 512 != 0 {

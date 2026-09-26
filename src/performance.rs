@@ -244,6 +244,7 @@ pub struct JsPerformance {
     pub(crate) hitresult_priority: Option<HitResultPriority>,
     pub(crate) has_hidden: bool,
     pub(crate) has_flashlight: bool,
+    pub(crate) has_relax: bool,
 }
 
 #[napi]
@@ -274,6 +275,7 @@ impl JsPerformance {
             hitresult_priority: None,
             has_hidden: false,
             has_flashlight: false,
+            has_relax: false,
         };
 
         if let Some(a) = args {
@@ -301,6 +303,7 @@ impl JsPerformance {
                 if info.mods.bits() & 1024 != 0 {
                     inst.has_flashlight = true;
                 }
+                inst.has_relax = info.has_relax;
             }
             inst.accuracy = a.accuracy;
             inst.combo = a.combo;
@@ -362,6 +365,7 @@ impl JsPerformance {
         if info.mods.bits() & 1024 != 0 {
             self.has_flashlight = true;
         }
+        self.has_relax = info.has_relax;
         Ok(())
     }
 
@@ -564,6 +568,7 @@ impl JsPerformance {
             has_hardrock: false,
             has_easy: false,
             has_flashlight: self.has_flashlight,
+            has_relax: self.has_relax,
             custom_clock_rate: cr,
             custom_ar: self.ar,
             custom_cs: self.cs,
@@ -635,6 +640,7 @@ impl JsPerformance {
                 cr,
                 self.has_hidden,
                 has_flashlight,
+                self.has_relax,
             );
 
             pp_aim_val = Some(res.aim_pp);

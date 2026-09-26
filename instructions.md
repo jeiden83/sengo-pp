@@ -64,6 +64,18 @@ El despliegue a NPM y GitHub Releases es una operación crítica y delicada. Par
 
 ---
 
+
+### 🛑 REGLA FUNDAMENTAL: SUBIDA ÚNICA Y DEFINITIVA (CERO RECOMPILACIONES / CERO VERSIONES INTERMEDIAS)
+Cuando el usuario indique subir, publicar o desplegar el paquete (**"subela"**, **"publica todo"**, etc.):
+- **PROHIBIDO TERMINANTEMENTE disparar múltiples versiones intermedias o micro-releases consecutivos** (ej: no crear 1.0.4, 1.0.5, 1.0.6...).
+- **TODO tiene que ir consolidado en una sola versión y en una única subida.**
+- **Protocolo de verificación exhaustiva ANTES de disparar el release:**
+  1. **Revisar todo el código en bloque:** Evaluadores matemáticos, bindings de Node/NAPI y tipos en `index.d.ts`.
+  2. **Validar parsing de argumentos:** Comprobar que los mods recibidos desde JS (strings, arrays, objetos, bitmasks) se propaguen correctamente a los evaluadores nativos.
+  3. **Aislamiento en CI:** Asegurar que no haya binarios compilados locales rastreados en Git y que el workflow empaquete cada plataforma de forma aislada.
+  4. **Correr suite completa:** `npm test` debe dar 100% de éxito.
+- **Solo cuando todo esté revisado y verificado localmente se dispara la subida.** Esto evita desperdiciar tiempo en recompilaciones de GitHub Actions, ensuciar el registro de NPM con versiones fallidas y desordenar el historial de Git.
+
 ## 3. 🤖 Automatización: Disparador "Ok subela"
 
 Para evitar errores humanos y automatizar el flujo completo:
